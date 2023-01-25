@@ -1,0 +1,82 @@
+<?php
+
+namespace App\Controller;
+
+use App\Entity\Task;
+use App\Repository\TaskRepository;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Annotation\Route;
+
+#[Route('/api/task')]
+class TaskController extends AbstractController
+{
+    #[Route('/', name: 'get_task', methods: 'get')]
+    public function getTasks(TaskRepository $repository): JsonResponse
+    {
+        $tasks = $repository->findAll();
+
+        return $this->json([
+            'message' => 'Shut up and get all tasks!',
+            'data' => $tasks,
+        ]);
+    }
+
+    #[Route('/', name: 'create_task', methods: 'post')]
+    public function createTask(Request $request, TaskRepository $Repository): JsonResponse
+    {
+        if (is_null($request->request->get(key: 'content', default: null)))
+            return $this->json([
+                'message' => 'no data',
+            ], status: 400);
+        $task = new Task();
+        $task->setContent($request->request->get(key: 'content'));
+        $task->setIsDone(false);
+        $Repository->save($task, flush: true);
+        return $this->json([
+            'message' => 'Task was create, congrats!',
+            'data' => $task,
+        ]);
+    }
+
+    #[Route('/{id}', name: 'edit_task', methods: 'put')]
+    public function editTask($id, Request $request, TaskRepository $Repository): JsonResponse
+    {
+        $task = $Repository->find($id);
+        if (!$task instanceof Task)return $this->json([
+            'message' => 'data not found',
+        ], status: 404);
+
+        $data = json_decode($request->getContent(), associative: true);
+        if (array_key_exists(key: 'content', $data) && $data['content'] !== $task->getContent()) $task->setContent($data['content']);
+        if (array_key_exists(key: 'done', $data) && $data['done'] !== $task->isIsDone()) $task->setIsDone($data['done']);
+        $task->setIsDone(false);
+        $Repository->save($task, flush: true);
+        return $this->json([
+            'message' => 'Task was update, YEAH!',
+            'data' => $task,
+        ]);
+    }
+
+    #[Route('/{id}', name: 'delete_task', methods: 'put')]
+    public function deleteTask($id, Request $request, TaskRepository $Repository): JsonResponse
+    {
+        $task = $Repository->find($id);
+        if (!$task instanceof Task)return $this->json([
+            'message' => 'data not found',
+        ], status: 404);
+
+        $Repository->remove($task, flush: true);
+        return $this->json([
+            'message' => 'Task was update, YEAH!',
+            'data' => $task,
+        ]);
+    }
+
+    /**
+     */
+    public function __construct()
+    {
+    }
+}
