@@ -1,0 +1,52 @@
+import { useEffect, useState } from "react";
+import TaskFormComponent from "./TaskFormComponent";
+import TaskViewComponent from "./TaskViewComponent";
+
+const ListComponent = props => {
+
+  const [list, setList] = useState([]);
+  useEffect(() => {
+   fetch('http://localhost:8000/api/task/', {
+    method: 'get',
+   }).then(response => response.json()).then(remoteData => {
+    setList(remoteData.data)
+   }).catch(err => console.error('Error', err))
+  }, [])
+
+  const handleDelete = key => {
+    fetch('http://localhost:8000/api/task/' + list[key.id], {
+    method: 'delete',
+   }).then(response => response.json()).then(remoteData => {
+    let tmp = Array.from(list);
+    tmp.splice(key, 1);
+    setList(tmp)
+    setList(remoteData.data)
+   }).catch(err => console.error('Error', err))
+    
+
+  }
+
+  const handleSave = content => {
+    let fd = new FormData();
+    fd.append('content', content);
+    fetch('http://localhost:8000/api/task/' + list[key.id], {
+    method: 'post',
+    body: fd,
+   }).then(response => response.json()).then(remoteData => {
+    let tmp = Array.from(list);
+    tmp.push(remoteData.data);
+    setList(tmp)
+   }).catch(err => console.error('Error', err))
+    };
+  
+  }
+
+  return <div className={'list'}>
+    <TaskFormComponent onSave={(content) => handleSave(content)} />
+  {list.map((item, key) => {
+    return <TaskViewComponent key={item.id} task={item} onDelete={() => handleDelete(key)} />
+  })}
+  </div> 
+
+
+export default ListComponent;
